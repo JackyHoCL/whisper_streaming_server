@@ -1,0 +1,11 @@
+faster_whisper
+websockets
+asyncio
+numpy
+pyaudio
+whisper
+fastapi
+uvicorn
+pydantic
+pydub
+ffmpeg
