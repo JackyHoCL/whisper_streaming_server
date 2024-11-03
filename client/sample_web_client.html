@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Real-Time Transcription</title>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const bufferSize = 2048; // Adjust buffer size as needed
+    let audioContext;
+    let scriptProcessorNode;
+    let ws;
+
+    async function init() {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const sourceNode = audioContext.createMediaStreamSource(stream);
+        
+        scriptProcessorNode = audioContext.createScriptProcessor(bufferSize, 1, 1);
+        sourceNode.connect(scriptProcessorNode);
+        scriptProcessorNode.connect(audioContext.destination);
+
+        scriptProcessorNode.onaudioprocess = (event) => {
+            const inputBuffer = event.inputBuffer;
+            const leftChannel = inputBuffer.getChannelData(0);
+
+            // Resample from 48000 Hz to 16000 Hz
+            const resampledData = downsampleBuffer(leftChannel, 48000, 16000);
+
+            // Send the resampled audio data via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(resampledData);
+            }
+        };
+
+        ws = new WebSocket('ws://localhost:8000/transcribe/stream');
+
+        ws.onmessage = (message) => {
+            console.log("Received transcript:", message.data);
+        };
+    }
+
+    function downsampleBuffer(buffer, sampleRate, targetRate) {
+        if (targetRate === sampleRate) {
+            return buffer;
+        }
+        const sampleRateRatio = sampleRate / targetRate;
+        const newLength = Math.round(buffer.length / sampleRateRatio);
+        const result = new Float32Array(newLength);
+        let offsetResult = 0;
+        let offsetBuffer = 0;
+        while (offsetResult < result.length) {
+            const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+            let accum = 0, count = 0;
+            for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
+                accum += buffer[i];
+                count++;
+            }
+            result[offsetResult] = accum / count;
+            offsetResult++;
+            offsetBuffer = nextOffsetBuffer;
+        }
+        return result;
+    }
+
+    document.getElementById('start').addEventListener('click', init);
+});
+</script>
+</head>
+<body>
+<button id="start">Start Listening</button>
+</body>
+</html>
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Real-Time Transcription</title>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const bufferSize = 16384; // Adjust buffer size as needed
+    let audioContext;
+    let scriptProcessorNode;
+    let ws;
+
+    async function init() {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const sourceNode = audioContext.createMediaStreamSource(stream);
+        
+        scriptProcessorNode = audioContext.createScriptProcessor(bufferSize, 1, 1);
+        sourceNode.connect(scriptProcessorNode);
+        scriptProcessorNode.connect(audioContext.destination);
+
+        scriptProcessorNode.onaudioprocess = (event) => {
+            const inputBuffer = event.inputBuffer;
+            const leftChannel = inputBuffer.getChannelData(0);
+            console.log(inputBuffer)
+            // Convert the buffer to an array and normalize it
+            const float32Array = new Float32Array(leftChannel);
+            // for (let i = 0; i < float32Array.length; i++) {
+            //     float32Array[i] *= 10;
+            // }
+            // console.log(float32Array*36000)
+            // Send the audio data via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(float32Array);
+            }
+        };
+
+        ws = new WebSocket('ws://localhost:8000/transcribe/stream');
+
+        ws.onmessage = (message) => {
+            console.log("Received transcript:", message.data);
+        };
+    }
+
+    document.getElementById('start').addEventListener('click', init);
+});
+
+</script>
+</head>
+<body>
+<button id="start">Start Listening</button>
+</body>
+</html> -->
