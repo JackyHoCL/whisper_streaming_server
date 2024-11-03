@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        ws = new WebSocket('ws://localhost:8000/transcribe/stream');
+        ws = new WebSocket('ws://localhost:10928/transcribe/stream');
 
         ws.onmessage = (message) => {
             console.log("Received transcript:", message.data);

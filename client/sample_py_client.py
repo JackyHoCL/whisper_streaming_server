@@ -4,7 +4,7 @@ import numpy as np
 import whisper
 import pyaudio
 
-SERVER_URL = "ws://localhost:8000/transcribe/stream"
+SERVER_URL = "ws://localhost:10928/transcribe/stream"
 
 def capture_audio():
     p = pyaudio.PyAudio()
