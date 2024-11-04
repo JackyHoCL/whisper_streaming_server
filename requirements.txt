@@ -10,3 +10,4 @@ pydantic
 pydub
 ffmpeg
 python-multipart
+sounddevice
