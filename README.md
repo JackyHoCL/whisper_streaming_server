@@ -25,7 +25,7 @@
    pip install -r requirements.txt
    ```
    
-**3. Run the server:**
+**2. Run the server:**
 
    In default Config:
    ```
