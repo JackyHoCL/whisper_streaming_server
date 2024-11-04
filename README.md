@@ -1,15 +1,38 @@
-1. Install dependencies:
-    ```
-    pip install -r requirements.txt
-    ```
+**1. Install dependencies:**
+
+   ffmpeg:
    
-2. Run the server:
+   linux
+   
+   ```
+   sudo apt install ffmpeg
+   ```
+   
+   windows:
+   
+   a. Download ffmpeg from https://www.ffmpeg.org/download.html
+   
+   b. Extract and move to target location
+   
+   c. set environment variable with the full path of ffmpeg/bin folder
+   
+   portaudio:
+   ```
+   sudo apt-get install portaudio19-dev
+   ```
+   pip:
+   ```
+   pip install -r requirements.txt
+   ```
+   
+**2. Run the server:**
+
    In default Config:
-     ```
-     python server.py
-     ```
+   ```
+   python server.py
+   ```
      
    In custom host:
-    ```
-    uvicorn server:app --host {host_ip} --port {port_number}
-    ```
+   ```
+   uvicorn server:app --host {host_ip} --port {port_number}
+   ```
