@@ -26,6 +26,7 @@
    ```
    
 **3. Run the server:**
+
    In default Config:
    ```
    python server.py
