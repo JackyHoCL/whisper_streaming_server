@@ -5,7 +5,7 @@ import whisper
 import pyaudio
 import sounddevice
 
-SERVER_URL = "ws://192.168.8.8:10928/transcribe/stream"
+SERVER_URL = "ws://localhost:10928/transcribe/stream"
 
 def capture_audio():
     p = pyaudio.PyAudio()
