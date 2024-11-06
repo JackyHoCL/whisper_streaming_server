@@ -3,7 +3,7 @@ websockets
 asyncio
 numpy
 pyaudio
-whisper
+openai-whisper
 fastapi
 uvicorn
 pydantic
