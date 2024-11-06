@@ -77,8 +77,8 @@ async def transcribe_stream(ws: WebSocket):
             if len(audio_data) > 150000:  # Threshold for triggering transcription
                 await ws.send_json({"transcribing": True})
                 data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
-                data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
-                segments, info = model.transcribe(audio=data_input, beam_size=5, vad_filter=True)
+                # data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
+                segments, info = model.transcribe(audio=data_input_from_source, beam_size=5, vad_filter=True)
                 
                 transcript = " ".join([segment.text for segment in segments])
                 
