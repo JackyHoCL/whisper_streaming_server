@@ -3,21 +3,42 @@ from pydantic import BaseModel
 import os
 from faster_whisper import WhisperModel
 import numpy as np
-
+import argparse
 from pydub import AudioSegment
+import whisper
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
+parser = argparse.ArgumentParser(description="Use a specified GPU")
+parser.add_argument('--gpu', type=int, default=0, help='GPU index to use')
+args = parser.parse_args()
+
+os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
 app = FastAPI()
 
 # Initialize the WhisperModel once during startup
 model_size = "deepdml/faster-whisper-large-v3-turbo-ct2"
+# Run on GPU with FP32
+model = WhisperModel(model_size, device="cuda", compute_type="float32")
 # Run on GPU with FP16
-model = WhisperModel(model_size, device="cuda", compute_type="float16")
+# model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # or run on GPU with INT8
 # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
+# model = WhisperModel(model_size, device="cuda", compute_type="int8")
 # or run on CPU with INT8
 # model = WhisperModel(model_size, device="cpu", compute_type="int8")
+
+warm_up_audio_file_name = 'warmup.mp3'
+
+def get_warmup_audio():
+    current_directory =  os.path.dirname(os.path.abspath(__file__))
+    warm_up_audio = current_directory + '/' + warm_up_audio_file_name
+    audio = whisper.load_audio(warm_up_audio)
+    return audio
+
+
+warm_up_audio = get_warmup_audio()
 
 class TranscriptionResponse(BaseModel):
     language: str
@@ -55,7 +76,8 @@ async def transcribe_stream(ws: WebSocket):
 
             if len(audio_data) > 150000:  # Threshold for triggering transcription
                 await ws.send_json({"transcribing": True})
-                data_input = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
+                data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
+                data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
                 segments, info = model.transcribe(audio=data_input, beam_size=5, vad_filter=True)
                 
                 transcript = " ".join([segment.text for segment in segments])
@@ -68,6 +90,8 @@ async def transcribe_stream(ws: WebSocket):
 
     except WebSocketDisconnect:
         print("Client disconnected")
+
+
 
 if __name__ == "__main__":
     import uvicorn
