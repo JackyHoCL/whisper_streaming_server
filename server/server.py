@@ -20,12 +20,12 @@ app = FastAPI()
 # Initialize the WhisperModel once during startup
 model_size = "deepdml/faster-whisper-large-v3-turbo-ct2"
 # Run on GPU with FP32
-model = WhisperModel(model_size, device="cuda", compute_type="float32")
+# model = WhisperModel(model_size, device="cuda", compute_type="float32")
 # Run on GPU with FP16
 # model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # or run on GPU with INT8
 # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
-# model = WhisperModel(model_size, device="cuda", compute_type="int8")
+model = WhisperModel(model_size, device="cuda", compute_type="int8")
 # or run on CPU with INT8
 # model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
@@ -78,7 +78,7 @@ async def transcribe_stream(ws: WebSocket):
                 await ws.send_json({"transcribing": True})
                 data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
                 # data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
-                segments, info = model.transcribe(audio=data_input_from_source, beam_size=5, vad_filter=True)
+                segments, info = model.transcribe(audio=data_input_from_source, beam_size=5, vad_filter=True, language="yue")
                 
                 transcript = " ".join([segment.text for segment in segments])
                 
