@@ -31,14 +31,14 @@ model = WhisperModel(model_size, device="cuda", compute_type="float32")
 
 warm_up_audio_file_name = 'warmup.mp3'
 
-def get_warmup_audio():
-    current_directory =  os.path.dirname(os.path.abspath(__file__))
-    warm_up_audio = current_directory + '/' + warm_up_audio_file_name
-    audio = whisper.load_audio(warm_up_audio)
-    return audio
+# def get_warmup_audio():
+#     current_directory =  os.path.dirname(os.path.abspath(__file__))
+#     warm_up_audio = current_directory + '/' + warm_up_audio_file_name
+#     audio = whisper.load_audio(warm_up_audio)
+#     return audio
 
 
-warm_up_audio = get_warmup_audio()
+# warm_up_audio = get_warmup_audio()
 
 class TranscriptionResponse(BaseModel):
     language: str
@@ -76,7 +76,7 @@ async def transcribe_stream(ws: WebSocket):
 
             if len(audio_data) > 200000:  # Threshold for triggering transcription
                 await ws.send_json({"transcribing": True})
-                data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
+                data_input_from_source = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
                 # data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
                 segments, info = model.transcribe(audio=data_input_from_source, beam_size=5, vad_filter=True)
                 
