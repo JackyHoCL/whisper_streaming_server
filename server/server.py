@@ -88,7 +88,7 @@ async def transcribe_stream(ws: WebSocket):
                 
                 # Reset buffer after transcription
                 audio_data.clear()
-
+ 
     except WebSocketDisconnect:
         print("Client disconnected")
 
