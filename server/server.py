@@ -25,20 +25,20 @@ model_size = "deepdml/faster-whisper-large-v3-turbo-ct2"
 # model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # or run on GPU with INT8
 # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
-# model = WhisperModel(model_size, device="cuda", compute_type="int8")
+model = WhisperModel(model_size, device="cuda", compute_type="int8")
 # or run on CPU with INT8
 # model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
-# warm_up_audio_file_name = 'warmup.mp3'
+warm_up_audio_file_name = 'warmup.mp3'
 
-# def get_warmup_audio():
-#     current_directory =  os.path.dirname(os.path.abspath(__file__))
-#     warm_up_audio = current_directory + '/' + warm_up_audio_file_name
-#     audio = whisper.load_audio(warm_up_audio)
-#     return audio
+def get_warmup_audio():
+    current_directory =  os.path.dirname(os.path.abspath(__file__))
+    warm_up_audio = current_directory + '/' + warm_up_audio_file_name
+    audio = whisper.load_audio(warm_up_audio)
+    return audio
 
 
-# warm_up_audio = get_warmup_audio()
+warm_up_audio = get_warmup_audio()
 
 class TranscriptionResponse(BaseModel):
     language: str
@@ -48,49 +48,49 @@ class TranscriptionResponse(BaseModel):
 @app.post("/transcribe/file")
 async def transcribe_audio(file: UploadFile = File(...)):
     print('ok')
-#     # Save uploaded file temporarily
-#     temp_file_path = f"tmp/{file.filename}"
-#     with open(temp_file_path, "wb") as f:
-#         f.write(await file.read())
-#     try:
-#         segments, info = model.transcribe(temp_file_path, beam_size=5, vad_filter=True)
-#         result_segments = [{"start": segment.start, "end": segment.end, "text": segment.text} for segment in segments]
-#         response = {
-#             "language": info.language,
-#             "language_probability": info.language_probability,
-#             "segments": result_segments
-#         }
-#         return TranscriptionResponse(**response)
-#     finally:
-#         # Clean up the temporary file
-#         os.remove(temp_file_path)
+    # Save uploaded file temporarily
+    temp_file_path = f"tmp/{file.filename}"
+    with open(temp_file_path, "wb") as f:
+        f.write(await file.read())
+    try:
+        segments, info = model.transcribe(temp_file_path, beam_size=5, vad_filter=True)
+        result_segments = [{"start": segment.start, "end": segment.end, "text": segment.text} for segment in segments]
+        response = {
+            "language": info.language,
+            "language_probability": info.language_probability,
+            "segments": result_segments
+        }
+        return TranscriptionResponse(**response)
+    finally:
+        # Clean up the temporary file
+        os.remove(temp_file_path)
 
 @app.websocket("/transcribe/stream")
 async def transcribe_stream(ws: WebSocket):
     await ws.accept()
     audio_data = bytearray()
     
-    # try:
-        # while True:
-            # data = await ws.receive_bytes()
-            # audio_data.extend(data)
+    try:
+        while True:
+            data = await ws.receive_bytes()
+            audio_data.extend(data)
 
-            # if len(audio_data) > 200000:  # Threshold for triggering transcription
-            #     await ws.send_json({"transcribing": True})
-            #     data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
-            #     # data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
-            #     segments, info = model.transcribe(audio=data_input_from_source, beam_size=5, vad_filter=True)
+            if len(audio_data) > 200000:  # Threshold for triggering transcription
+                await ws.send_json({"transcribing": True})
+                data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
+                # data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
+                segments, info = model.transcribe(audio=data_input_from_source, beam_size=5, vad_filter=True)
                 
-            #     transcript = " ".join([segment.text for segment in segments])
+                transcript = " ".join([segment.text for segment in segments])
                 
-            #     # Send transcript back to client
-            #     await ws.send_json({"transcript": transcript})
+                # Send transcript back to client
+                await ws.send_json({"transcript": transcript})
                 
-            #     # Reset buffer after transcription
-            #     audio_data.clear()
+                # Reset buffer after transcription
+                audio_data.clear()
 
-    # except WebSocketDisconnect:
-        # print("Client disconnected")
+    except WebSocketDisconnect:
+        print("Client disconnected")
 
 
 
