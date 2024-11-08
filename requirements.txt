@@ -4,7 +4,7 @@ asyncio
 numpy
 pyaudio
 openai-whisper
-fastapi
+fastapi[standard]
 uvicorn
 pydantic
 pydub
