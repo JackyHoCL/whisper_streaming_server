@@ -25,7 +25,7 @@ model_size = "deepdml/faster-whisper-large-v3-turbo-ct2"
 # model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # or run on GPU with INT8
 # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
-model = WhisperModel(model_size, device="cuda", compute_type="int8")
+# model = WhisperModel(model_size, device="cuda", compute_type="int8")
 # or run on CPU with INT8
 # model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
@@ -45,8 +45,9 @@ class TranscriptionResponse(BaseModel):
     language_probability: float
     segments: list
 
-# @app.post("/transcribe/file")
-# async def transcribe_audio(file: UploadFile = File(...)):
+@app.post("/transcribe/file")
+async def transcribe_audio(file: UploadFile = File(...)):
+    print('ok')
 #     # Save uploaded file temporarily
 #     temp_file_path = f"tmp/{file.filename}"
 #     with open(temp_file_path, "wb") as f:
@@ -64,10 +65,10 @@ class TranscriptionResponse(BaseModel):
 #         # Clean up the temporary file
 #         os.remove(temp_file_path)
 
-# @app.websocket("/transcribe/stream")
-# async def transcribe_stream(ws: WebSocket):
-#     await ws.accept()
-#     audio_data = bytearray()
+@app.websocket("/transcribe/stream")
+async def transcribe_stream(ws: WebSocket):
+    await ws.accept()
+    audio_data = bytearray()
     
     # try:
         # while True:
