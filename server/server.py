@@ -45,24 +45,24 @@ class TranscriptionResponse(BaseModel):
     language_probability: float
     segments: list
 
-@app.post("/transcribe/file")
-async def transcribe_audio(file: UploadFile = File(...)):
-    # Save uploaded file temporarily
-    temp_file_path = f"tmp/{file.filename}"
-    with open(temp_file_path, "wb") as f:
-        f.write(await file.read())
-    try:
-        segments, info = model.transcribe(temp_file_path, beam_size=5, vad_filter=True)
-        result_segments = [{"start": segment.start, "end": segment.end, "text": segment.text} for segment in segments]
-        response = {
-            "language": info.language,
-            "language_probability": info.language_probability,
-            "segments": result_segments
-        }
-        return TranscriptionResponse(**response)
-    finally:
-        # Clean up the temporary file
-        os.remove(temp_file_path)
+# @app.post("/transcribe/file")
+# async def transcribe_audio(file: UploadFile = File(...)):
+#     # Save uploaded file temporarily
+#     temp_file_path = f"tmp/{file.filename}"
+#     with open(temp_file_path, "wb") as f:
+#         f.write(await file.read())
+#     try:
+#         segments, info = model.transcribe(temp_file_path, beam_size=5, vad_filter=True)
+#         result_segments = [{"start": segment.start, "end": segment.end, "text": segment.text} for segment in segments]
+#         response = {
+#             "language": info.language,
+#             "language_probability": info.language_probability,
+#             "segments": result_segments
+#         }
+#         return TranscriptionResponse(**response)
+#     finally:
+#         # Clean up the temporary file
+#         os.remove(temp_file_path)
 
 @app.websocket("/transcribe/stream")
 async def transcribe_stream(ws: WebSocket):
