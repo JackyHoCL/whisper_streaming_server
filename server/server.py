@@ -29,7 +29,7 @@ model = WhisperModel(model_size, device="cuda", compute_type="int8")
 # or run on CPU with INT8
 # model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
-warm_up_audio_file_name = 'warmup.mp3'
+# warm_up_audio_file_name = 'warmup.mp3'
 
 # def get_warmup_audio():
 #     current_directory =  os.path.dirname(os.path.abspath(__file__))
@@ -64,10 +64,10 @@ class TranscriptionResponse(BaseModel):
 #         # Clean up the temporary file
 #         os.remove(temp_file_path)
 
-@app.websocket("/transcribe/stream")
-async def transcribe_stream(ws: WebSocket):
-    await ws.accept()
-    audio_data = bytearray()
+# @app.websocket("/transcribe/stream")
+# async def transcribe_stream(ws: WebSocket):
+#     await ws.accept()
+#     audio_data = bytearray()
     
     # try:
         # while True:
