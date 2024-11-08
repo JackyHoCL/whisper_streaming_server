@@ -96,4 +96,4 @@ async def transcribe_stream(ws: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run('server:app', host="0.0.0.0", port=10928)
+    uvicorn.run('server:app', host="0.0.0.0", port=10928, reload=True)
