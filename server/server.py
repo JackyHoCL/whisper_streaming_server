@@ -78,7 +78,7 @@ async def transcribe_stream(ws: WebSocket):
             if len(audio_data) > 250000:  # Threshold for triggering transcription
                 data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
                 # data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
-                await transcribe_audio(data_input_from_source, ws)
+                transcribe_audio(data_input_from_source, ws)
                 # Reset buffer after transcription
                 audio_data.clear()
 
