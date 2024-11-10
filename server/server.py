@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect, Response
 from pydantic import BaseModel
 import os
 from faster_whisper import WhisperModel
@@ -7,7 +7,18 @@ import argparse
 from pydub import AudioSegment
 import whisper
 import asyncio
+import io
+import torchaudio
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
+#vits
+import torch
+from transformers import VitsTokenizer, VitsModel, set_seed
+
+tokenizer_tts = VitsTokenizer.from_pretrained("facebook/mms-tts-eng")
+model_tts = VitsModel.from_pretrained("facebook/mms-tts-eng")
+
+#whisper
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 parser = argparse.ArgumentParser(description="Use a specified GPU")
@@ -17,18 +28,19 @@ args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
 app = FastAPI()
+security = HTTPBasic()
 
 # Initialize the WhisperModel once during startup
 model_size = "deepdml/faster-whisper-large-v3-turbo-ct2"
 # Run on GPU with FP32
-model = WhisperModel(model_size, device="cuda", compute_type="float32")
+# model = WhisperModel(model_size, device="cuda", compute_type="float32")
 # Run on GPU with FP16
 # model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # or run on GPU with INT8
 # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
 # model = WhisperModel(model_size, device="cuda", compute_type="int8")
 # or run on CPU with INT8
-# model = WhisperModel(model_size, device="cpu", compute_type="int8")
+model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
 warm_up_audio_file_name = 'warmup.mp3'
 
@@ -85,6 +97,41 @@ async def transcribe_stream(ws: WebSocket):
 
     except WebSocketDisconnect:
         print("Client disconnected")
+
+@app.post("/tts/vits")
+async def transcribe_audio(input: str):
+    inputs = tokenizer_tts(text=input, return_tensors="pt")
+    print(input)
+    set_seed(555)  # make deterministic
+    with torch.no_grad():
+        outputs = model_tts(**inputs)
+    waveform = outputs.waveform[0].cpu().numpy().tolist()
+    # print(waveform)
+    return {'wf' : str(waveform)}
+
+
+@app.post("/tts/vits/file")
+async def transcribe_audio(input: str):
+    inputs = tokenizer_tts(text=input, return_tensors="pt")
+    print(input)
+    set_seed(555)  # make deterministic
+    with torch.no_grad():
+        outputs = model_tts(**inputs)
+    waveform = outputs.waveform[0]
+
+    # Convert waveform to bytes
+    buffer = io.BytesIO()
+    torchaudio.save(buffer, waveform.unsqueeze(0), sample_rate=16000, format="wav")
+    buffer.seek(0)
+    
+    # Return as a downloadable WAV file
+    return Response(
+        buffer.getvalue(),
+        media_type="audio/wav",
+        headers={
+            "Content-Disposition": f"attachment; filename={input}.wav"
+        }
+    )
 
 async def transcribe_audio(data, ws: WebSocket):
     segments, info = model.transcribe(audio=data, beam_size=5, vad_filter=True)
