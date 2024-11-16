@@ -15,8 +15,8 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import torch
 from transformers import VitsTokenizer, VitsModel, set_seed
 
-tokenizer_tts = VitsTokenizer.from_pretrained("facebook/mms-tts-eng")
-model_tts = VitsModel.from_pretrained("facebook/mms-tts-eng")
+tokenizer_tts = VitsTokenizer.from_pretrained("csukuangfj/vits-cantonese-hf-xiaomaiiwn")
+model_tts = VitsModel.from_pretrained("csukuangfj/vits-cantonese-hf-xiaomaiiwn")
 
 #whisper
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -38,9 +38,9 @@ model_size = "deepdml/faster-whisper-large-v3-turbo-ct2"
 # model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # or run on GPU with INT8
 # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
-# model = WhisperModel(model_size, device="cuda", compute_type="int8")
+model = WhisperModel(model_size, device="cuda", compute_type="int8")
 # or run on CPU with INT8
-model = WhisperModel(model_size, device="cpu", compute_type="int8")
+# model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
 warm_up_audio_file_name = 'warmup.mp3'
 
