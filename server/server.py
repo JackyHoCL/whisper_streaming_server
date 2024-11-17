@@ -19,7 +19,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 app = FastAPI()
 
 # Initialize the WhisperModel once during startup
-model_size = "deepdml/faster-whisper-large-v3-turbo-ct2"
+model_size = "JackyHoCL/whisper-small-cantonese-yue-english-ct2"
 # Run on GPU with FP32
 # model = WhisperModel(model_size, device="cuda", compute_type="float32")
 # Run on GPU with FP16
