@@ -76,7 +76,7 @@ async def transcribe_stream(ws: WebSocket):
             data = await ws.receive_bytes()
             audio_data.extend(data)
 
-            if len(audio_data) > 150000:  # Threshold for triggering transcription
+            if len(audio_data) > 200000:  # Threshold for triggering transcription
                 data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
                 # data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
                 asyncio.create_task(transcribe_audio(data_input_from_source, ws))
