@@ -10,7 +10,7 @@ import asyncio
 import webrtcvad
 
 vad = webrtcvad.Vad()
-vad.set_mode(1)
+vad.set_mode(2)
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
@@ -19,7 +19,7 @@ parser.add_argument('--gpu', type=int, default=0, help='GPU index to use')
 args = parser.parse_args()
 sample_rate = 16000
 stream_timeout = 30
-start_window_size = 0.3 #second
+start_window_size = 0.03 #second
 stop_window_size = 2
 
 os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
@@ -29,11 +29,11 @@ app = FastAPI()
 # Initialize the WhisperModel once during startup
 model_size = "JackyHoCL/whisper-large-v3-turbo-cantonese-yue-english-ct2"
 # Run on GPU with FP32
-model = WhisperModel(model_size, device="cuda", compute_type="float32")
+# model = WhisperModel(model_size, device="cuda", compute_type="float32")
 # Run on GPU with FP16
 # model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # or run on GPU with INT8
-# model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
+model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
 # model = WhisperModel(model_size, device="cuda", compute_type="int8")
 # or run on CPU with INT8
 # model = WhisperModel(model_size, device="cpu", compute_type="int8")
@@ -80,33 +80,43 @@ async def transcribe_stream(ws: WebSocket):
     audio_data = bytearray()
     sliding_window = bytearray()
     transcrbe_data = bytearray()
+    temp = bytearray()
     transcribing = False
     vad_result = False
+    false_count = 0
+
     try:
         while True:
             data = await ws.receive_bytes()
             audio_data.extend(data)
             data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
-            sliding_window.extend(data_input_from_source.tobytes())
-            window_size = stop_window_size if (transcribing)  else start_window_size
-            if len(sliding_window) > int(sample_rate * window_size):  # Keep only the last 2 seconds
-                sliding_window = sliding_window[(-1 * int(sample_rate*window_size)):]
-            if len(audio_data) > (sample_rate*start_window_size):
-                vad_result = vad.is_speech(np.frombuffer(sliding_window, dtype=np.int16).astype(np.float32), sample_rate)
-            if vad_result:
+            # print(data_input_from_source)
+            window_size = start_window_size
+            print(len(transcrbe_data))
+            if len(audio_data) > int(sample_rate * window_size): 
+                sliding_window = data_input_from_source.tobytes()[(-1 * int(sample_rate*window_size*2)):]
+                # print(sliding_window)
+                vad_result = vad.is_speech(sliding_window, sample_rate)
+                print(vad_result)
+            if vad_result and len(transcrbe_data) < stream_timeout * sample_rate:
                 transcribing = True
+                false_count = 0
                 # Reset buffer after transcription
-                transcrbe_data.extend(np.frombuffer(data, dtype=np.float32).astype(np.float32))
+                transcrbe_data.extend(data)
                 # audio_data.clear()
                 # sliding_window.clear()
             else:
-                transcribing = False
-                #transcribe recorded data after silent more than 2s or reach the speech threshold
-                if len(transcrbe_data) > 0:
-                    asyncio.create_task(transcribe_audio(data_input_from_source, ws))
-                    transcrbe_data.clear()
+                if (transcribing):
+                    false_count += 1
+                if (false_count > 100): 
+                    transcribing = False
+                    #transcribe recorded data after silent more than 2s or reach the speech threshold
+                    if len(transcrbe_data) > 0:
+                        asyncio.create_task(transcribe_audio(np.frombuffer(transcrbe_data, dtype=np.float32).astype(np.float32), ws))
+                        transcrbe_data.clear()
+                    false_count = 0
 
-            if len(audio_data) > (stream_timeout * sample_rate):
+            if len(audio_data) > (stream_timeout * sample_rate * 2):
                 audio_data = audio_data[-sample_rate*stream_timeout:]
 
     except WebSocketDisconnect:
