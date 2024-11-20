@@ -89,8 +89,8 @@ async def transcribe_stream(ws: WebSocket):
             data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
             sliding_window.extend(data_input_from_source.tobytes())
             window_size = stop_window_size if (transcribing)  else start_window_size
-            if len(sliding_window) > sample_rate * window_size:  # Keep only the last 2 seconds
-                sliding_window = sliding_window[-sample_rate*window_size:]
+            if len(sliding_window) > int(sample_rate * window_size):  # Keep only the last 2 seconds
+                sliding_window = sliding_window[(-1 * int(sample_rate*window_size)):]
             vad_result = vad.is_speech(np.frombuffer(sliding_window, dtype=np.int16).astype(np.float32), sample_rate)
             if vad_result:
                 transcribing = True
