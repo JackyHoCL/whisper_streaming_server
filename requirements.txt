@@ -11,4 +11,3 @@ pydub
 ffmpeg
 python-multipart
 sounddevice
-webrtcvad
