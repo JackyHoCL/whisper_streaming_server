@@ -7,12 +7,20 @@ import argparse
 from pydub import AudioSegment
 import whisper
 import asyncio
+import webrtcvad
+
+vad = webrtcvad.Vad()
+vad.set_mode(1)
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 parser = argparse.ArgumentParser(description="Use a specified GPU")
 parser.add_argument('--gpu', type=int, default=0, help='GPU index to use')
 args = parser.parse_args()
+sample_rate = 16000
+stream_timeout = 30
+start_window_size = 0.3 #second
+stop_window_size = 2
 
 os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
@@ -70,18 +78,35 @@ async def transcribe_audio(file: UploadFile = File(...)):
 async def transcribe_stream(ws: WebSocket):
     await ws.accept()
     audio_data = bytearray()
+    sliding_window = bytearray()
+    transcrbe_data = bytearray()
+    transcribing = False
     
     try:
         while True:
             data = await ws.receive_bytes()
             audio_data.extend(data)
-
-            if len(audio_data) > 200000:  # Threshold for triggering transcription
-                data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
-                # data_input = np.concatenate((warm_up_audio, data_input_from_source), axis=0)
-                asyncio.create_task(transcribe_audio(data_input_from_source, ws))
+            data_input_from_source = np.frombuffer(audio_data, dtype=np.float32).astype(np.float32)
+            sliding_window.extend(data_input_from_source.tobytes())
+            window_size = stop_window_size if (transcribing)  else start_window_size
+            if len(sliding_window) > sample_rate * window_size:  # Keep only the last 2 seconds
+                sliding_window = sliding_window[-sample_rate*window_size:]
+            vad_result = vad.is_speech(np.frombuffer(sliding_window, dtype=np.int16).astype(np.float32), sample_rate)
+            if vad_result:
+                transcribing = True
                 # Reset buffer after transcription
-                audio_data.clear()
+                transcrbe_data.extend(np.frombuffer(data, dtype=np.float32).astype(np.float32))
+                # audio_data.clear()
+                # sliding_window.clear()
+            else:
+                transcribing = False
+                #transcribe recorded data after silent more than 2s or reach the speech threshold
+                if len(transcrbe_data) > 0:
+                    asyncio.create_task(transcribe_audio(data_input_from_source, ws))
+                    transcrbe_data.clear()
+
+            if len(audio_data) > (stream_timeout * sample_rate):
+                audio_data = audio_data[-sample_rate*stream_timeout:]
 
     except WebSocketDisconnect:
         print("Client disconnected")
