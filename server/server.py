@@ -70,14 +70,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
 async def transcribe_stream(ws: WebSocket):
     await ws.accept()
     audio_data = bytearray()
-<<<<<<< HEAD
     
-=======
-    sliding_window = bytearray()
-    transcrbe_data = bytearray()
-    transcribing = False
-    vad_result = False
->>>>>>> dcaceea (bug fix)
     try:
         while True:
             data = await ws.receive_bytes()
@@ -89,8 +82,7 @@ async def transcribe_stream(ws: WebSocket):
             window_size = stop_window_size if (transcribing)  else start_window_size
             if len(sliding_window) > int(sample_rate * window_size):  # Keep only the last 2 seconds
                 sliding_window = sliding_window[(-1 * int(sample_rate*window_size)):]
-            if len(audio_data) > (sample_rate*start_window_size):
-                vad_result = vad.is_speech(np.frombuffer(sliding_window, dtype=np.int16).astype(np.float32), sample_rate)
+            vad_result = vad.is_speech(np.frombuffer(sliding_window, dtype=np.int16).astype(np.float32), sample_rate)
             if vad_result:
                 transcribing = True
                 # Reset buffer after transcription
