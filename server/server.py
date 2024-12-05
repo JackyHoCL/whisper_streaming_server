@@ -21,9 +21,9 @@ app = FastAPI()
 # Initialize the WhisperModel once during startup
 model_size = "JackyHoCL/whisper-large-v3-turbo-cantonese-yue-english-ct2"
 # Run on GPU with FP32
-model = WhisperModel(model_size, device="cuda", compute_type="float32")
+# model = WhisperModel(model_size, device="cuda", compute_type="float32")
 # Run on GPU with FP16
-# model = WhisperModel(model_size, device="cuda", compute_type="float16")
+model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # or run on GPU with INT8
 # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
 # model = WhisperModel(model_size, device="cuda", compute_type="int8")
